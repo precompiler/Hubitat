@@ -39,6 +39,9 @@ metadata {
         command "refresh" //This is used for the overall refresh process
         
         command "boostOneHour" // Custom
+
+        command "boostHalfHour"
+
 		command "boostHours",[[name:"desiredHours",type:"NUMBER", description:"Boost Hours", constraints:["NUMBER"]]] // Custom
         command "boostTempHours",[[name:"desiredTemp",type:"NUMBER", description:"Boost Temperature", constraints:["NUMBER"]],[name:"desiredHours",type:"NUMBER", description:"Boost Hours", constraints:["NUMBER"]]]
         
@@ -574,6 +577,10 @@ def boostOneHour() {
 	//parent.childHold(desiredTemp.toString(), "1", "0", device.deviceNetworkId)
 }
 
+def boostHalfHour() {
+    boostTempTime(0, 0, 30)
+}
+
 def boostHours(int durationHours) {
 	//Boost mode for custom number of hours
 	boostTempHours(0, durationHours)
@@ -597,6 +604,14 @@ def boostTempHours(int desiredTemp, int desiredHours) {
     
     //Send command to neohub
 	parent.childHold(desiredTemp.toString(), desiredHours.toString(), "0", device.deviceNetworkId)
+    runIn(5, refresh)
+}
+
+def boostTempTime(int desiredTemp, int desiredHours, int desiredMinutes) {
+    if (desiredTemp==0) desiredTemp = device.currentValue("temperature").toInteger() + 2
+
+    //Send command to neohub
+	parent.childHold(desiredTemp.toString(), desiredHours.toString(), desiredMinutes.toString(), device.deviceNetworkId)
     runIn(5, refresh)
 }
 
