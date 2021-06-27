@@ -1,13 +1,13 @@
 /**
  *  
- *	Fibaro FGS-224 Double Smart Module
+ *	Fibaro FGS-222 Double Relay Switch Device Type - For use on Hubitat
  *  
- *	Author: Chris Charles
- *	Date: 2020-12-01
+ *	Author: Eric Maycock and Robin Winbourne, updated by Chris Charles
+ *	Date: 2018-03-24
  */
  
 metadata {
-definition (name: "Fibaro Double Smart FGS-224", namespace: "cjcharles0", author: "Chris (help from Eric and Robin)") {
+definition (name: "Fibaro Double Relay FGS-222", namespace: "cjcharles0", author: "Eric, Robin and Chris") {
 capability "Switch"
 //capability "Relay Switch"
 //capability "Polling"
@@ -28,125 +28,182 @@ command "RemoveChildren"
 command "componentOn"
 command "componentOff"
 command "componentRefresh"
-
+    
 command "updateSingleParam" // This custom command can be used with Rule Machine or webCoRE, to send parameter values (paramNr & paramvalue) to the device
 
-// device type 516 = 0x0204, manufacturer 271 = 0x010F, 4096 = 0x1000
-fingerprint mfr:"010F", prod:"0204", deviceId: "1000", inClusters:"0x5E,0x55,0x98,0x9F,0x56,0x6C,0x22"
-fingerprint mfr:"010F", prod:"0204", deviceId: "1000", inClusters:"0x25,0x85,0x8E,0x59,0x86,0x72,0x5A,0x73,0x5B,0x60,0x70,0x75,0x71,0x7A"
+fingerprint deviceId: "0x1001", inClusters:"0x86, 0x72, 0x85, 0x60, 0x8E, 0x25, 0x20, 0x70, 0x27"
 
 }
     
    preferences {
 
-        input name: "param1", type: "enum", defaultValue: "1", required: true,
-            title: "1 - State of outputs after a power failure",
+        input name: "param1", type: "enum", defaultValue: "255", required: true,
+            title: "Parameter No. 1 - Activate / deactivate functions ALL ON / ALL OFF. Default value: 255.",
        		options: [
-                    ["0" : "0 - Remain switched off"],
-                    ["1" : "1 - Restore original state"],
-                    ["2" : "2 - Restore original, except toggle where it should match switch status"]
+                    ["255" : "255 - ALL ON active, ALL OFF active"],
+                    ["0" : "0 - ALL ON is not active ALL OFF is not active"],
+                    ["1" : "1 - ALL ON is not active ALL OFF active"],
+                    ["2" : "2 - ALL ON active ALL OFF is not active"]
                 ]
        
-        input name: "param20", type: "enum", defaultValue: "0", required: true,
-            title: "20 - Switch 1 Input Type",
+        input name: "param3", type: "enum", defaultValue: "0", required: true,
+            title: "Parameter No. 3 - Auto off relay after specified time, with the possibility of manual override - immediate Off after button push. Default value: 0.",
+       		options: [
+                    ["0" : "0 - Manual override disabled"],
+                    ["1" : "1 - Manual override enabled"]
+                ]
+
+		input name: "param4", type: "number", range: "0..65535", defaultValue: "0", required: true,
+            title: "Parameter No. 4 - Auto off for relay 1.  " +
+                   "Available settings:\n" +
+                   "[1 - 65535] (0,1 s – 6553,5 s) Time period for auto off, in miliseconds,\n" +
+                   "0 - Auto off disabled.\n" +
+                   "Default value: 0."
+
+		input name: "param5", type: "number", range: "0..65535", defaultValue: "0", required: true,
+            title: "Parameter No. 5 - Auto off for relay 2.  " +
+                   "Available settings:\n" +
+                   "[1 - 65535] (0,1 s – 6553,5 s) Time period for auto off, in miliseconds,\n" +
+                   "0 - Auto off disabled.\n" +
+                   "Default value: 0."
+
+		input name: "param6", type: "enum", defaultValue: "0", required: true,
+            title: "Parameter No. 6 - Sending commands to control devices assigned to 1st association group (key no. 1). " +
+                   "NOTE: Parameter 15 value must be set to 1 to work properly. Default value: 0.",
+       		options: [
+                    ["0" : "0 - Commands are sent when device is turned on and off"],
+                    ["1" : "1 - Commands are sent when device is turned off"],
+                	["2" : "2 - Commands are sent when device is turned off"]
+                ]
+
+       		input name: "param7", type: "enum", defaultValue: "0", required: true,
+            title: "Parameter No. 7 - Sending commands to control devices assigned to 2nd association group (key no. 2). " +
+                   "NOTE: Parameter 15 value must be set to 1 to work properly. Default value: 0.",
+       		options: [
+                    ["0" : "0 - Commands are sent when device is turned on and off"],
+                    ["1" : "1 - Commands are sent when device is turned off"],
+                	["2" : "2 - Commands are sent when device is turned off"]
+                ]
+
+		input name: "param13", type: "enum", defaultValue: "0", required: true,
+            title: "Parameter No. 13 - Assigns bistable key status to the device. Default value: 0.",
+       		options: [
+                    ["0" : "0 - Device changes status on key status change"],
+                    ["1" : "1 - Device status depends on key status: ON when the key is ON"]
+                ]
+
+		input name: "param14", type: "enum", defaultValue: "1", required: true,
+            title: "Parameter No. 14 - Switch type connector, you may choose between momentary and toggle switches. Default value: 1.",
        		options: [
                     ["0" : "0 - Momentary switch"],
-                    ["1" : "1 - Toggle, output synchronised to switch"],
-                    ["2" : "2 - Toggle, every switch change toggles output"]
+                    ["1" : "1 - Toggle switch"]
                 ]
-       
-        input name: "param21", type: "enum", defaultValue: "0", required: true,
-            title: "21 - Switch 2 Input Type",
+
+		input name: "param15", type: "enum", defaultValue: "0", required: true,
+            title: "Parameter No. 15 - Operation of the Dimmer and Roller Shutter Controller - enabling this option allows the user to dim lighting/shut roller by associating Dimmer/Roller Shutter Controller and holding or double press of double switch (only mono-stable switch). Default value: 0.",
        		options: [
-                    ["0" : "0 - Momentary switch"],
-                    ["1" : "1 - Toggle, output synchronised to switch"],
-                    ["2" : "2 - Toggle, every switch change toggles output"]
+                    ["0" : "0 - Dimmer/Roller Shutter Controller control is not active"],
+                    ["1" : "1 - Dimmer/Roller Shutter Controller control is active"]
                 ]
-       
-        input name: "param24", type: "enum", defaultValue: "0", required: true,
-            title: "24 - Inputs orientation (Swap S1/S2)",
+
+		input name: "param16", type: "enum", defaultValue: "1", required: true,
+            title: "Parameter No. 16 - Saving the state of the device after a power failure. Default value: 1.",
        		options: [
-                    ["0" : "0 - Default"],
-                    ["1" : "1 - Reversed"]
+                    ["0" : "0 - Switch returns to 'off' position"],
+                    ["1" : "1 - Switch saves its state before power failure"]
                 ]
-       
-        input name: "param25", type: "enum", defaultValue: "0", required: true,
-            title: "25 - Output Orientation (Swap Q1/Q2)",
+
+        input name: "param30", type: "enum", defaultValue: "3", required: true,
+            title: "Parameter No. 30 - Relay 1 - Response to General Alarm. Default value: 3.",
        		options: [
-                    ["0" : "0 - Default"],
-                    ["1" : "1 - Reversed"]
+                    ["0" : "0 - Switch does not respond to alarm"],
+                    ["1" : "1 - Switch turns on after detecting an alarm"],
+                	["2" : "2 - Switch turns off after detecting an alarm"],
+                	["3" : "3 - Switch flashes after detecting an alarm"]
                 ]
-       
-        input name: "param40", type: "number", range: "0..15", defaultValue: "15", required: true,
-            title: "40 - S1 Input Scenes Sent.\n" +
-                   "Default value: 15 (1+2=3 means scenes for single/double click are sent."
-       
-        input name: "param41", type: "number", range: "0..15", defaultValue: "15", required: true,
-            title: "41 - S2 Input Scenes Sent.\n" +
-                   "Default value: 15 (1+2=3 means scenes for single/double click are sent."
-       
-        input name: "param150", type: "enum", defaultValue: "0", required: true,
-            title: "150 - First channel operating mode",
+
+     	input name: "param31", type: "enum", defaultValue: "2", required: true,
+            title: "Parameter No. 31 - Relay 1 - Response to Flood Alarm. Default value: 2.",
        		options: [
-                    ["0" : "0 - Standard operation"],
-                    ["1" : "1 - Delayed off"],
-                    ["2" : "2 - Auto off"],
-                    ["3" : "3 - Flashing"]
+                    ["0" : "0 - Switch does not respond to alarm"],
+                    ["1" : "1 - Switch turns on after detecting an alarm"],
+                	["2" : "2 - Switch turns off after detecting an alarm"],
+                	["3" : "3 - Switch flashes after detecting an alarm"]
                 ]
-       
-        input name: "param151", type: "enum", defaultValue: "0", required: true,
-            title: "151 - Second channel operating mode",
+               
+       input name: "param32", type: "enum", defaultValue: "3", required: true,
+            title: "Parameter No. 32 - Relay 1 - Response to Smoke, CO, CO2 Alarm. Default value: 3.",
        		options: [
-                    ["0" : "0 - Standard operation"],
-                    ["1" : "1 - Delayed off"],
-                    ["2" : "2 - Auto off"],
-                    ["3" : "3 - Flashing"]
+                    ["0" : "0 - Switch does not respond to alarm"],
+                    ["1" : "1 - Switch turns on after detecting an alarm"],
+                	["2" : "2 - Switch turns off after detecting an alarm"],
+                	["3" : "3 - Switch flashes after detecting an alarm"]
                 ]
        
-        input name: "param152", type: "enum", defaultValue: "0", required: true,
-            title: "152 - First channel reaction to input change in delayed/auto OFF modes",
+       input name: "param33", type: "enum", defaultValue: "1", required: true,
+            title: "Parameter No. 33 - Relay 1 - Response to Temperature Alarm. Default value: 1.",
        		options: [
-                    ["0" : "0 - Cancel mode and set default state"],
-                    ["1" : "1 - No reaction, mode runs until it ends"],
-                    ["2" : "2 - Reset timer, start from the beginning"]
+                    ["0" : "0 - Switch does not respond to alarm"],
+                    ["1" : "1 - Switch turns on after detecting an alarm"],
+                	["2" : "2 - Switch turns off after detecting an alarm"],
+                	["3" : "3 - Switch flashes after detecting an alarm"]
                 ]
-       
-        input name: "param153", type: "enum", defaultValue: "0", required: true,
-            title: "153 - Second channel reaction to input change in delayed/auto OFF modes",
+
+		input name: "param39", type: "number", range: "0..65535", defaultValue: "600", required: true,
+            title: "Parameter No. 39 - Active flashing alarm time. " +
+            	   "This parameter allows to set time parameter used in timed modes.\n" +
+                   "Available settings:\n" +
+                   "[1-65535][ms].\n" +
+                   "Default value: 600."
+
+    	input name: "param40", type: "enum", defaultValue: "3", required: true,
+            title: "Parameter No. 40 - Relay 2 - Response to General Alarm. Default value: 3.",
        		options: [
-                    ["0" : "0 - Cancel mode and set default state"],
-                    ["1" : "1 - No reaction, mode runs until it ends"],
-                    ["2" : "2 - Reset timer, start from the beginning"]
+                    ["0" : "0 - Switch does not respond to alarm"],
+                    ["1" : "1 - Switch turns on after detecting an alarm"],
+                	["2" : "2 - Switch turns off after detecting an alarm"],
+                	["3" : "3 - Switch flashes after detecting an alarm"]
                 ]
-       
-        input name: "param154", type: "number", range: "0..65535", defaultValue: "5", required: true,
-            title: "154 - First channel time for delayed/auto OFF/flashing\n" +
-                   "0.1s steps for auto off or cycle period."
-       
-        input name: "param155", type: "number", range: "0..65535", defaultValue: "5", required: true,
-            title: "155 - Second channel time for delayed/auto OFF/flashing\n" +
-                   "0.1s steps for auto off or cycle period."
-       
-        input name: "param162", type: "enum", defaultValue: "0", required: true,
-            title: "162 - Q1 output type",
+
+     	input name: "param41", type: "enum", defaultValue: "2", required: true,
+            title: "Parameter No. 41 - Relay 2 - Response to Flood Alarm. Default value: 2.",
        		options: [
-                    ["0" : "0 - Normally Open"],
-                    ["1" : "1 - Normally closed"]
+                    ["0" : "0 - Switch does not respond to alarm"],
+                    ["1" : "1 - Switch turns on after detecting an alarm"],
+                	["2" : "2 - Switch turns off after detecting an alarm"],
+                	["3" : "3 - Switch flashes after detecting an alarm"]
+                ]
+               
+       input name: "param42", type: "enum", defaultValue: "3", required: true,
+            title: "Parameter No. 42 - Relay 2 - Response to Smoke, CO, CO2 Alarm. Default value: 3.",
+       		options: [
+                    ["0" : "0 - Switch does not respond to alarm"],
+                    ["1" : "1 - Switch turns on after detecting an alarm"],
+                	["2" : "2 - Switch turns off after detecting an alarm"],
+                	["3" : "3 - Switch flashes after detecting an alarm"]
                 ]
        
-        input name: "param163", type: "enum", defaultValue: "0", required: true,
-            title: "163 - Q2 output type",
+       input name: "param43", type: "enum", defaultValue: "1", required: true,
+            title: "Parameter No. 43 - Relay 2 - Response to Temperature Alarm. Default value: 1.",
        		options: [
-                    ["0" : "0 - Normally Open"],
-                    ["1" : "1 - Normally closed"]
+                    ["0" : "0 - Switch does not respond to alarm"],
+                    ["1" : "1 - Switch turns on after detecting an alarm"],
+                	["2" : "2 - Switch turns off after detecting an alarm"],
+                	["3" : "3 - Switch flashes after detecting an alarm"]
                 ]
        
-        input name: "param164", type: "enum", defaultValue: "0", required: true,
-            title: "164 - Lock simultaneous switching of Q1 and Q2 outputs",
-       		options: [
-                    ["0" : "0 - Lock disabled"],
-                    ["1" : "1 - Lock enabled"]
-                ]
+    input name: "paramAssociationGroup1", type: "bool", defaultValue: false, required: true,
+             title: "The Fibaro Sigle Switch provides the association of three groups.\n\n" +
+                    "1st group is assigned to key no. 1.\n" +
+                    "Default value: false (true officially)"
+
+        input name: "paramAssociationGroup2", type: "bool", defaultValue: false, required: true,
+             title: "2nd group is assigned to key no. 2.\n" +
+                    "Default value: false (true officially)"
+
+        input name: "paramAssociationGroup3", type: "bool", defaultValue: false, required: true,
+             title: "3rd group reports state of devices. Only one device can be associated to this group.\n" +
+                    "Default value: false"
     }
 }
 
@@ -437,21 +494,37 @@ def configure() {
     def cmds = []
 
     cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param1.toInteger(), parameterNumber:1, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param20.toInteger(), parameterNumber:20, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param21.toInteger(), parameterNumber:21, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param24.toInteger(), parameterNumber:24, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param25.toInteger(), parameterNumber:25, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param3.toInteger(), parameterNumber:3, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param4.toInteger(), parameterNumber:4, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param5.toInteger(), parameterNumber:5, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param6.toInteger(), parameterNumber:6, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param7.toInteger(), parameterNumber:7, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param13.toInteger(), parameterNumber:13, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param14.toInteger(), parameterNumber:14, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param15.toInteger(), parameterNumber:15, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param16.toInteger(), parameterNumber:16, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param30.toInteger(), parameterNumber:30, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param31.toInteger(), parameterNumber:31, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param32.toInteger(), parameterNumber:32, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param33.toInteger(), parameterNumber:33, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param39.toInteger(), parameterNumber:39, size: 1))
     cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param40.toInteger(), parameterNumber:40, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param41.toInteger(), parameterNumber:40, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param150.toInteger(), parameterNumber:150, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param151.toInteger(), parameterNumber:151, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param152.toInteger(), parameterNumber:152, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param153.toInteger(), parameterNumber:153, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param154.toInteger(), parameterNumber:154, size: 2))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param155.toInteger(), parameterNumber:155, size: 2))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param162.toInteger(), parameterNumber:162, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param163.toInteger(), parameterNumber:163, size: 1))
-    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param164.toInteger(), parameterNumber:164, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param41.toInteger(), parameterNumber:41, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param42.toInteger(), parameterNumber:42, size: 1))
+    cmds << secureCmd(zwave.configurationV1.configurationSet(scaledConfigurationValue: param43.toInteger(), parameterNumber:43, size: 1))
+    
+    cmds << secureCmd(zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: []))
+    if (paramAssociationGroup1) {
+        cmds << secureCmd(zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])) //0,1,2,3
+    }
+    cmds << secureCmd(zwave.associationV2.associationRemove(groupingIdentifier: 2, nodeId: []))
+    if (paramAssociationGroup2) {
+        cmds << secureCmd(zwave.associationV2.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId])) //0,1,2,3
+    }
+    cmds << secureCmd(zwave.associationV2.associationRemove(groupingIdentifier: 3, nodeId: []))
+    if (paramAssociationGroup3) {
+        cmds << secureCmd(zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId])) //0,1,2,3
+    }
     
     return delayBetween(cmds, 500)
 }
@@ -475,8 +548,7 @@ def updated()
 def on() {
     log.debug "on"
     delayBetween([
-        zwave.multiChannelV4.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[255]).format(),
-        zwave.multiChannelV4.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[255]).format(),
+        zwave.switchAllV1.switchAllOn().format(),
         zwave.multiChannelV4.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format(),
         zwave.multiChannelV4.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2).format()
     ], 250)
@@ -484,8 +556,7 @@ def on() {
 def off() {
     log.debug "off"
     delayBetween([
-        zwave.multiChannelV4.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:1, parameter:[0]).format(),
-        zwave.multiChannelV4.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:1, parameter:[0]).format(),
+        zwave.switchAllV1.switchAllOff().format(),
         zwave.multiChannelV4.multiChannelCmdEncap(sourceEndPoint:1, destinationEndPoint:1, commandClass:37, command:2).format(),
         zwave.multiChannelV4.multiChannelCmdEncap(sourceEndPoint:2, destinationEndPoint:2, commandClass:37, command:2).format()
     ], 250)
